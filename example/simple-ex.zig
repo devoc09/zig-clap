@@ -1,6 +1,8 @@
 pub fn main() !void {
     var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    defer threaded.deinit();
 
     // First we specify what parameters our program can take.
     // We can use `parseParamsComptime` to parse a string into an array of `Param(Help)`.
@@ -32,7 +34,7 @@ pub fn main() !void {
         .assignment_separators = "=:",
     }) catch |err| {
         // Report useful error and exit.
-        try diag.reportToFile(.stderr(), err);
+        try diag.reportToFile(threaded.io(), .stderr(), err);
         return err;
     };
     defer res.deinit();

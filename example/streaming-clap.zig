@@ -1,5 +1,7 @@
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    defer threaded.deinit();
 
     // First we specify what parameters our program can take.
     const params = [_]clap.Param(u8){
@@ -34,7 +36,7 @@ pub fn main() !void {
     // Because we use a streaming parser, we have to consume each argument parsed individually.
     while (parser.next() catch |err| {
         // Report useful error and exit.
-        try diag.reportToFile(.stderr(), err);
+        try diag.reportToFile(threaded.io(), .stderr(), err);
         return err;
     }) |arg| {
         // arg.param will point to the parameter which matched the argument.
