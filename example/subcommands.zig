@@ -23,6 +23,8 @@ pub fn main() !void {
     var gpa_state = std.heap.DebugAllocator(.{}){};
     const gpa = gpa_state.allocator();
     defer _ = gpa_state.deinit();
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    defer threaded.deinit();
 
     var iter = try std.process.ArgIterator.initWithAllocator(gpa);
     defer iter.deinit();
@@ -41,7 +43,7 @@ pub fn main() !void {
         // not fully consumed. It can then be reused to parse the arguments for subcommands.
         .terminating_positional = 0,
     }) catch |err| {
-        try diag.reportToFile(.stderr(), err);
+        try diag.reportToFile(threaded.io(), .stderr(), err);
         return err;
     };
     defer res.deinit();
@@ -52,11 +54,11 @@ pub fn main() !void {
     const command = res.positionals[0] orelse return error.MissingCommand;
     switch (command) {
         .help => std.debug.print("--help\n", .{}),
-        .math => try mathMain(gpa, &iter, res),
+        .math => try mathMain(gpa, threaded.io(), &iter, res),
     }
 }
 
-fn mathMain(gpa: std.mem.Allocator, iter: *std.process.ArgIterator, main_args: MainArgs) !void {
+fn mathMain(gpa: std.mem.Allocator, io: std.Io, iter: *std.process.ArgIterator, main_args: MainArgs) !void {
     // The parent arguments are not used here, but there are cases where it might be useful, so
     // this example shows how to pass the arguments around.
     _ = main_args;
@@ -77,7 +79,7 @@ fn mathMain(gpa: std.mem.Allocator, iter: *std.process.ArgIterator, main_args: M
         .diagnostic = &diag,
         .allocator = gpa,
     }) catch |err| {
-        try diag.reportToFile(.stderr(), err);
+        try diag.reportToFile(io, .stderr(), err);
         return err; // propagate error
     };
     defer res.deinit();

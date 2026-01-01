@@ -1,6 +1,8 @@
 pub fn main() !void {
     var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    defer threaded.deinit();
 
     const params = comptime clap.parseParamsComptime(
         \\-h, --help     Display this help and exit.
@@ -18,7 +20,7 @@ pub fn main() !void {
     // The last argument contains options as to how `help` should print those parameters. Using
     // `.{}` means the default options.
     if (res.args.help != 0)
-        return clap.helpToFile(.stderr(), clap.Help, &params, .{});
+        return clap.helpToFile(threaded.io(), .stderr(), clap.Help, &params, .{});
 }
 
 const clap = @import("clap");
