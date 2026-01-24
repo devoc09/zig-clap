@@ -1,11 +1,4 @@
-pub fn main() !void {
-    var gpa_state = std.heap.DebugAllocator(.{}){};
-    const gpa = gpa_state.allocator();
-    defer _ = gpa_state.deinit();
-
-    var threaded: std.Io.Threaded = .init_single_threaded;
-    const io: std.Io = threaded.io();
-
+pub fn main(init: std.process.Init) !void {
     // First we specify what parameters our program can take.
     // We can use `parseParamsComptime` to parse a string into an array of `Param(Help)`.
     const params = comptime clap.parseParamsComptime(
@@ -28,15 +21,15 @@ pub fn main() !void {
     };
 
     var diag = clap.Diagnostic{};
-    var res = clap.parse(clap.Help, &params, parsers, .{
+    var res = clap.parse(clap.Help, &params, parsers, init.minimal.args, .{
         .diagnostic = &diag,
-        .allocator = gpa,
+        .allocator = init.gpa,
         // The assignment separator can be configured. `--number=1` and `--number:1` is now
         // allowed.
         .assignment_separators = "=:",
     }) catch |err| {
         // Report useful error and exit.
-        try diag.reportToFile(io, .stderr(), err);
+        try diag.reportToFile(init.io, .stderr(), err);
         return err;
     };
     defer res.deinit();
